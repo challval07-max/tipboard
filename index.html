@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TipBoard — Tips & Messages for Agent ID Holders</title>
+<meta name="description" content="Tip any Agent ID holder on BNB Chain and leave them a public on-chain message. Only Agent ID (.ai) holders can tip or post.">
+<style>
+  :root{
+    --bg:#0b0e11; --card:#161a1e; --card2:#1e242b; --line:#2b3139;
+    --text:#eaecef; --muted:#9aa4b2; --yellow:#f0b90b; --yellow-dark:#d9a50a;
+    --green:#0ecb81; --red:#f6465d; --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.5; padding:20px 14px 48px}
+  .wrap{max-width:760px; margin:0 auto}
+  header{text-align:center; padding:26px 0 8px}
+  .logo{font-size:40px}
+  h1{font-size:30px; font-weight:800; letter-spacing:-.5px}
+  h1 span{color:var(--yellow)}
+  .tagline{color:var(--muted); margin-top:6px; font-size:15px}
+  .badge{display:inline-block; margin-top:12px; padding:4px 12px; border:1px solid var(--line); border-radius:999px; font-size:12.5px; color:var(--muted); background:var(--card)}
+  .badge b{color:var(--yellow); font-weight:700}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-top:16px}
+  .card h2{font-size:16.5px; margin-bottom:10px}
+  .row{display:flex; gap:10px; flex-wrap:wrap}
+  .row > *{flex:1; min-width:140px}
+  label{display:block; font-size:12.5px; color:var(--muted); margin:10px 0 5px}
+  input, textarea{width:100%; background:var(--card2); border:1px solid var(--line); border-radius:10px; color:var(--text); padding:11px 12px; font-size:15px; font-family:inherit}
+  input:focus, textarea:focus{outline:none; border-color:var(--yellow)}
+  textarea{resize:vertical; min-height:58px}
+  .btn{display:inline-block; width:100%; background:var(--yellow); color:#181a20; border:none; border-radius:10px; padding:12px 16px; font-size:15.5px; font-weight:700; cursor:pointer; margin-top:14px}
+  .btn:hover{background:var(--yellow-dark)}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn.secondary{background:var(--card2); color:var(--text); border:1px solid var(--line)}
+  .stats{display:flex; gap:10px; margin-top:16px}
+  .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; text-align:center}
+  .stat .num{font-size:22px; font-weight:800; color:var(--yellow)}
+  .stat .lbl{font-size:12px; color:var(--muted); margin-top:2px}
+  .status{font-size:14px; color:var(--muted); word-break:break-all}
+  .status b{color:var(--text)}
+  .pill{display:inline-block; padding:2px 10px; border-radius:999px; font-size:12.5px; font-weight:700}
+  .pill.ok{background:rgba(14,203,129,.15); color:var(--green)}
+  .pill.no{background:rgba(246,70,93,.15); color:var(--red)}
+  .msg{border-top:1px solid var(--line); padding:12px 2px}
+  .msg:first-of-type{border-top:none}
+  .msg .meta{font-size:12.5px; color:var(--muted)}
+  .msg .meta a{color:var(--yellow); text-decoration:none}
+  .msg .text{margin-top:3px; font-size:15px; word-break:break-word}
+  .msg .amt{color:var(--yellow); font-weight:700}
+  .note{font-size:12.5px; color:var(--muted); margin-top:14px; text-align:center}
+  .warn{display:none; background:rgba(246,70,93,.12); border:1px solid var(--red); color:#ffb3ba; border-radius:10px; padding:10px 12px; font-size:13.5px; margin-top:16px}
+  #toast{display:none; position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--card2); border:1px solid var(--line); color:var(--text); padding:11px 16px; border-radius:10px; font-size:14px; max-width:92vw; z-index:50; box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  footer{margin-top:26px; text-align:center; color:var(--muted); font-size:12.5px}
+  footer a{color:var(--yellow); text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">💸</div>
+    <h1>Tip<span>Board</span></h1>
+    <p class="tagline">Tip any <b>Agent ID</b> holder on BNB Chain and leave them a public on-chain message.<br>Only Agent ID (.ai) holders can tip or post — that's the rule, enforced by the contract itself.</p>
+    <div class="badge">Built for the <b>Binance Wallet Agent ID Hackathon</b> · BNB Chain</div>
+  </header>
+
+  <div class="warn" id="configWarn">⚠️ Demo mode: the TipBoard contract address has not been set yet. Set <b>TIPBOARD_ADDRESS</b> in this page's script after deploying the contract.</div>
+
+  <div class="stats">
+    <div class="stat"><div class="num" id="statTips">–</div><div class="lbl">Total tips</div></div>
+    <div class="stat"><div class="num" id="statVolume">–</div><div class="lbl">Total tipped (BNB)</div></div>
+    <div class="stat"><div class="num" id="statCredit">–</div><div class="lbl">Your pending tips (BNB)</div></div>
+  </div>
+
+  <div class="card">
+    <h2>👛 Your wallet</h2>
+    <p class="status" id="walletStatus">Not connected yet.</p>
+    <p class="status" id="agentStatus" style="margin-top:6px"></p>
+    <button class="btn" id="btnConnect">Connect Wallet</button>
+    <button class="btn secondary" id="btnWithdraw" disabled>Withdraw my tips</button>
+  </div>
+
+  <div class="card">
+    <h2>💸 Send a tip</h2>
+    <label for="tipTo">Recipient wallet address (must hold an Agent ID)</label>
+    <input id="tipTo" placeholder="0x..." autocomplete="off" spellcheck="false">
+    <div class="row">
+      <div>
+        <label for="tipAmount">Amount (BNB)</label>
+        <input id="tipAmount" type="number" min="0" step="0.0001" placeholder="0.001">
+      </div>
+      <div>
+        <label for="tipMsg">Message (max 280 chars)</label>
+        <input id="tipMsg" maxlength="280" placeholder="Great work, agent!">
+      </div>
+    </div>
+    <button class="btn" id="btnTip" disabled>Tip + send message</button>
+  </div>
+
+  <div class="card">
+    <h2>📝 Post to the board — free (gas only)</h2>
+    <label for="postMsg">Message (max 280 chars)</label>
+    <textarea id="postMsg" maxlength="280" placeholder="Say hello to every Agent ID holder reading this board..."></textarea>
+    <button class="btn" id="btnPost" disabled>Post message</button>
+  </div>
+
+  <div class="card">
+    <h2>📌 The Board</h2>
+    <div id="board"><p class="status">Loading recent activity…</p></div>
+    <button class="btn secondary" id="btnRefresh">Refresh board</button>
+  </div>
+
+  <p class="note">⚠️ Tips are real BNB on BNB Chain mainnet and transactions cannot be reversed. Always double-check the recipient address. You confirm every transaction in your own wallet — TipBoard never asks for your seed phrase or private key.</p>
+
+  <footer>
+    TipBoard is an independent community project built for the Agent ID Hackathon.<br>
+    Not affiliated with or endorsed by Binance. Agent ID contract:
+    <a href="https://bscscan.com/address/0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F" target="_blank" rel="noopener">0x60B9…022F</a>
+    · TipBoard contract: <span id="footContract">not set</span>
+  </footer>
+</div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+/* ================= CONFIG — set after deploying TipBoard.sol ================= */
+const TIPBOARD_ADDRESS = "0x6eA30CF15C1DadFd61A691eE2f03F824eD78e680";
+/* ============================================================================ */
+
+const AGENT_ID_ADDRESS = "0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F";
+const BSC_CHAIN_ID = 56n;
+const READ_RPC = "https://bsc-dataseed1.bnbchain.org";
+
+const TIPBOARD_ABI = [
+  "event TipSent(address indexed from, address indexed to, uint256 amount, string message)",
+  "event MessagePosted(address indexed from, string message)",
+  "event Withdrawn(address indexed to, uint256 amount)",
+  "function credits(address) view returns (uint256)",
+  "function tip(address recipient, string message) payable",
+  "function postMessage(string message)",
+  "function totalTips() view returns (uint256)",
+  "function totalTippedWei() view returns (uint256)",
+  "function withdraw()"
+];
+const AGENT_ID_ABI = ["function balanceOf(address owner) view returns (uint256)"];
+
+const configured = /^0x[0-9a-fA-F]{40}$/.test(TIPBOARD_ADDRESS);
+if (!configured) document.getElementById("configWarn").style.display = "block";
+else document.getElementById("footContract").innerHTML =
+  '<a href="https://bscscan.com/address/' + TIPBOARD_ADDRESS + '" target="_blank" rel="noopener">' +
+  TIPBOARD_ADDRESS.slice(0, 6) + "…" + TIPBOARD_ADDRESS.slice(-4) + "</a>";
+
+let provider, signer, account, tipboard, agentId;
+const readProvider = new ethers.JsonRpcProvider(READ_RPC);
+const readBoard = configured ? new ethers.Contract(TIPBOARD_ADDRESS, TIPBOARD_ABI, readProvider) : null;
+
+function toast(msg, ms = 4200) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", ms);
+}
+function short(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
+function bscAddr(a) { return "https://bscscan.com/address/" + a; }
+
+async function loadStats() {
+  if (!readBoard) return;
+  try {
+    const [tips, vol] = await Promise.all([readBoard.totalTips(), readBoard.totalTippedWei()]);
+    document.getElementById("statTips").textContent = tips.toString();
+    document.getElementById("statVolume").textContent = Number(ethers.formatEther(vol)).toFixed(5);
+  } catch (e) { /* RPC hiccup — leave dashes */ }
+  if (account) {
+    try {
+      const c = await readBoard.credits(account);
+      document.getElementById("statCredit").textContent = Number(ethers.formatEther(c)).toFixed(5);
+      document.getElementById("btnWithdraw").disabled = c === 0n;
+    } catch (e) {}
+  }
+}
+
+async function loadBoard() {
+  const el = document.getElementById("board");
+  if (!readBoard) { el.innerHTML = '<p class="status">Contract not configured yet.</p>'; return; }
+  try {
+    const latest = await readProvider.getBlockNumber();
+    const from = Math.max(0, latest - 100000);
+    const [tips, posts] = await Promise.all([
+      readBoard.queryFilter(readBoard.filters.TipSent(), from, latest),
+      readBoard.queryFilter(readBoard.filters.MessagePosted(), from, latest)
+    ]);
+    const items = [];
+    tips.forEach(ev => items.push({ block: ev.blockNumber, type: "tip", from: ev.args.from, to: ev.args.to, amount: ev.args.amount, text: ev.args.message, tx: ev.transactionHash }));
+    posts.forEach(ev => items.push({ block: ev.blockNumber, type: "post", from: ev.args.from, text: ev.args.message, tx: ev.transactionHash }));
+    items.sort((a, b) => b.block - a.block);
+    if (!items.length) { el.innerHTML = '<p class="status">No activity yet — be the first Agent ID holder to post!</p>'; return; }
+    el.innerHTML = items.slice(0, 30).map(it => {
+      const head = it.type === "tip"
+        ? '💸 <a href="' + bscAddr(it.from) + '" target="_blank" rel="noopener">' + short(it.from) + '</a> tipped <span class="amt">' + ethers.formatEther(it.amount) + ' BNB</span> to <a href="' + bscAddr(it.to) + '" target="_blank" rel="noopener">' + short(it.to) + '</a>'
+        : '📝 <a href="' + bscAddr(it.from) + '" target="_blank" rel="noopener">' + short(it.from) + '</a> posted';
+      return '<div class="msg"><div class="meta">' + head + ' · <a href="https://bscscan.com/tx/' + it.tx + '" target="_blank" rel="noopener">tx</a></div><div class="text"></div></div>';
+    }).join("");
+    [...el.querySelectorAll(".msg .text")].forEach((n, i) => n.textContent = items[i].text || "");
+  } catch (e) {
+    el.innerHTML = '<p class="status">Could not load the board right now. Try Refresh in a moment.</p>';
+  }
+}
+
+async function connect() {
+  if (!window.ethereum) { toast("No wallet found. Open this page in a browser with MetaMask or Binance Wallet installed."); return; }
+  provider = new ethers.BrowserProvider(window.ethereum);
+  const net = await provider.getNetwork();
+  if (net.chainId !== BSC_CHAIN_ID) {
+    try {
+      await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x38" }] });
+      provider = new ethers.BrowserProvider(window.ethereum);
+    } catch (e) { toast("Please switch your wallet to BNB Chain (mainnet) and try again."); return; }
+  }
+  signer = await provider.getSigner();
+  account = await signer.getAddress();
+  document.getElementById("walletStatus").innerHTML = "Connected: <b>" + account + "</b>";
+  document.getElementById("btnConnect").textContent = "Connected ✓";
+  if (configured) {
+    tipboard = new ethers.Contract(TIPBOARD_ADDRESS, TIPBOARD_ABI, signer);
+    agentId = new ethers.Contract(AGENT_ID_ADDRESS, AGENT_ID_ABI, signer);
+    try {
+      const bal = await agentId.balanceOf(account);
+      const holds = bal > 0n;
+      document.getElementById("agentStatus").innerHTML = holds
+        ? 'Agent ID: <span class="pill ok">holder ✓</span> — you can tip and post.'
+        : 'Agent ID: <span class="pill no">not a holder</span> — claim an Agent ID in the Binance app (Wallet → Agent ID banner) to tip or post. You can still receive tips once you hold one.';
+      document.getElementById("btnTip").disabled = !holds;
+      document.getElementById("btnPost").disabled = !holds;
+    } catch (e) { document.getElementById("agentStatus").textContent = "Could not verify Agent ID status."; }
+  }
+  loadStats();
+}
+
+async function sendTx(fn, okMsg) {
+  try {
+    const tx = await fn();
+    toast("Transaction sent — waiting for confirmation…");
+    await tx.wait();
+    toast(okMsg);
+    loadStats(); loadBoard();
+  } catch (e) {
+    const m = (e && (e.shortMessage || e.message)) || "Transaction failed";
+    toast("⚠️ " + m.slice(0, 220), 6000);
+  }
+}
+
+document.getElementById("btnConnect").onclick = connect;
+document.getElementById("btnRefresh").onclick = () => { loadBoard(); loadStats(); };
+document.getElementById("btnTip").onclick = () => {
+  const to = document.getElementById("tipTo").value.trim();
+  const amt = document.getElementById("tipAmount").value;
+  const msg = document.getElementById("tipMsg").value;
+  if (!ethers.isAddress(to)) { toast("That recipient address doesn't look valid."); return; }
+  if (to.toLowerCase() === account.toLowerCase()) { toast("You can't tip yourself — the contract will reject it too."); return; }
+  let value;
+  try { value = ethers.parseEther(amt || "0"); } catch (e) { toast("Enter a valid BNB amount."); return; }
+  if (value <= 0n) { toast("Tip amount must be more than 0."); return; }
+  sendTx(() => tipboard.tip(to, msg, { value }), "Tip sent! 🎉");
+};
+document.getElementById("btnPost").onclick = () => {
+  const msg = document.getElementById("postMsg").value.trim();
+  if (!msg) { toast("Write a message first."); return; }
+  sendTx(() => tipboard.postMessage(msg), "Posted to the board! 📌");
+};
+document.getElementById("btnWithdraw").onclick = () =>
+  sendTx(() => tipboard.withdraw(), "Tips withdrawn to your wallet 💰");
+
+if (window.ethereum && window.ethereum.on) {
+  window.ethereum.on("accountsChanged", () => location.reload());
+  window.ethereum.on("chainChanged", () => location.reload());
+}
+loadStats(); loadBoard();
+</script>
+</body>
+</html>
